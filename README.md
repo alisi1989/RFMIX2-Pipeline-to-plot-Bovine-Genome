@@ -157,18 +157,88 @@ Key Improvements:
   • Safe streaming for large files.
 
 
-Basic usage:
+Basic usage
+-------------------------------------------------------------------------------
+
+The parameter `--prefix` can be used in TWO different modes:
+
+MODE A — Per-chromosome MSP files (most common scenario)
+---------------------------------------------------------
+
+If RFMix2 produced one `.msp.tsv` file per chromosome, such as:
+
+  results/sampleA_chr1.msp.tsv
+  results/sampleA_chr2.msp.tsv
+  ...
+  results/sampleA_chr29.msp.tsv
+
+then `--prefix` should contain the common prefix BEFORE the chromosome token:
 
 <pre><code>
 python LAP_Bovine_Genome.py \
-  --prefix results/sample_ \
+  --prefix results/sampleA_ \
   --chr chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 \
         chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 \
         chr20 chr21 chr22 chr23 chr24 chr25 chr26 chr27 chr28 chr29 \
   --output-dir out_bed
 </code></pre>
 
-Parallel version:
+The script will:
+
+  • Automatically discover all matching MSP files
+  • Group them by individual
+  • Combine chromosomes
+  • Generate one final BED per individual
+
+
+MODE B — Single combined MSP file (one individual)
+---------------------------------------------------
+
+If you already have ONE combined MSP file:
+
+  results/sampleA.msp.tsv
+
+then you can pass the full file path directly:
+
+<pre><code>
+python LAP_Bovine_Genome.py \
+  --prefix results/sampleA.msp.tsv \
+  --output-dir out_bed
+</code></pre>
+
+In this case:
+
+  • `--chr` is not required
+  • The script treats the file as one individual
+  • A single final BED will be generated
+
+
+MODE C — Multi-sample MSP file
+--------------------------------
+
+If the MSP contains multiple individuals with hap columns such as:
+
+  sampleA.0  sampleA.1  sampleB.0  sampleB.1
+
+you can still pass the full file:
+
+<pre><code>
+python LAP_Bovine_Genome.py \
+  --prefix results/combined.msp.tsv \
+  --output-dir out_bed
+</code></pre>
+
+The script will automatically:
+
+  • Detect hap columns
+  • Separate each sample
+  • Produce one final BED per sample
+
+
+Parallel processing
+-------------------------------------------------------------------------------
+
+To speed up processing when multiple individuals are present:
 
 <pre><code>
 python LAP_Bovine_Genome.py \
@@ -177,7 +247,11 @@ python LAP_Bovine_Genome.py \
   --threads 4
 </code></pre>
 
-Feature highlight:
+
+Feature highlight (optional)
+-------------------------------------------------------------------------------
+
+To highlight a genomic region (e.g., gene of interest):
 
 <pre><code>
 python LAP_Bovine_Genome.py \
@@ -187,6 +261,8 @@ python LAP_Bovine_Genome.py \
   --to-bp 135200000 \
   --chromosome chr2
 </code></pre>
+
+This will insert dashed black lines into the final ancestry painting.
 
 
 Output:
@@ -253,16 +329,18 @@ To adapt to a different assembly, edit:
 
 inside Plot_LAP_Bovine_Genome.py.
 
-
 -------------------------------------------------------------------------------
 FULL WORKFLOW EXAMPLE
 -------------------------------------------------------------------------------
 
-Step 1: Generate final BED
+Example A — Standard per-chromosome RFMix2 output
+--------------------------------------------------
+
+Step 1: Generate final BED files from per-chromosome MSP files
 
 <pre><code>
 python LAP_Bovine_Genome.py \
-  --prefix results/sample_ \
+  --prefix /path/to/results/sampleA_ \
   --chr chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 \
         chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 \
         chr20 chr21 chr22 chr23 chr24 chr25 chr26 chr27 chr28 chr29 \
@@ -270,7 +348,7 @@ python LAP_Bovine_Genome.py \
   --threads 4
 </code></pre>
 
-Step 2: Plot
+Step 2: Plot the resulting BED file
 
 <pre><code>
 python Plot_LAP_Bovine_Genome.py \
@@ -279,6 +357,59 @@ python Plot_LAP_Bovine_Genome.py \
   -O figures/sampleA.pdf
 </code></pre>
 
+
+Example B — Single combined MSP file
+-------------------------------------
+
+If you have already combined chromosomes into:
+
+  sampleA.msp.tsv
+
+Step 1:
+
+<pre><code>
+python LAP_Bovine_Genome.py \
+  --prefix sampleA.msp.tsv \
+  --output-dir out_bed
+</code></pre>
+
+Step 2:
+
+<pre><code>
+python Plot_LAP_Bovine_Genome.py \
+  -B base_bovine_template.svg \
+  -I out_bed/sampleA.bed \
+  -O figures/sampleA.pdf
+</code></pre>
+
+
+Example C — Multi-sample MSP file
+----------------------------------
+
+If one MSP file contains multiple samples:
+
+<pre><code>
+python LAP_Bovine_Genome.py \
+  --prefix combined_dataset.msp.tsv \
+  --output-dir out_bed \
+  --threads 4
+</code></pre>
+
+The script will generate:
+
+  out_bed/sampleA.bed
+  out_bed/sampleB.bed
+  out_bed/sampleC.bed
+  ...
+
+Then plot each sample individually:
+
+<pre><code>
+python Plot_LAP_Bovine_Genome.py \
+  -B base_bovine_template.svg \
+  -I out_bed/sampleA.bed \
+  -O figures/sampleA.pdf
+</code></pre>
 
 -------------------------------------------------------------------------------
 TROUBLESHOOTING
